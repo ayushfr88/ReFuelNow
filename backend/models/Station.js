@@ -33,6 +33,11 @@ const StationSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    status: {
+        type: String,
+        enum: ['active', 'inactive'],
+        default: 'active'
+    },
     createdAt: {
         type: Date,
         default: Date.now

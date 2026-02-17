@@ -72,6 +72,11 @@ const AddStationPage = () => {
             return;
         }
 
+        if (!formData.latitude || !formData.longitude) {
+            alert('Please detect your location first.');
+            return;
+        }
+
         const stationData = {
             stationName: formData.stationName,
             address: formData.address,

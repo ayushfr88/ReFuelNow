@@ -1,5 +1,6 @@
 import React from 'react';
 import { Facebook, Twitter, Instagram, Linkedin, Droplet, Phone, Mail, MapPin } from 'lucide-react';
+import Logo from './ui/Logo';
 
 const Footer = () => {
     return (
@@ -9,13 +10,8 @@ const Footer = () => {
 
                     {/* Brand Info */}
                     <div>
-                        <div className="flex items-center gap-2 mb-6 text-white">
-                            <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-white">
-                                <Droplet size={20} fill="currentColor" />
-                            </div>
-                            <span className="text-xl font-bold tracking-tight">
-                                Refuel<span className="text-primary">Now</span>
-                            </span>
+                        <div className="mb-6">
+                            <Logo theme="dark" />
                         </div>
                         <p className="mb-6 leading-relaxed">
                             India's most trusted on-demand fuel delivery service. Smart, Safe, and Reliable refueling for your business.

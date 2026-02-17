@@ -20,6 +20,14 @@ const UserSchema = new mongoose.Schema({
         enum: ['customer', 'seller'], // Changed to 'seller' as per request
         default: 'customer'
     },
+    phone: {
+        type: String,
+        default: ''
+    },
+    profilePicture: {
+        type: String,
+        default: ''
+    },
     createdAt: {
         type: Date,
         default: Date.now

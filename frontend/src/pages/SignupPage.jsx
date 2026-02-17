@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Briefcase, ArrowLeft, Droplet, ArrowRight, Check } from 'lucide-react';
 import Button from '../components/ui/Button';
+import Logo from '../components/ui/Logo';
 import { Link, useNavigate } from 'react-router-dom';
 
 const SignupPage = () => {
@@ -70,13 +71,8 @@ const SignupPage = () => {
                 </div>
 
                 <div className="relative z-10 text-white max-w-lg">
-                    <div className="flex items-center gap-2 mb-8">
-                        <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white">
-                            <Droplet size={24} fill="currentColor" />
-                        </div>
-                        <span className="text-2xl font-bold tracking-tight">
-                            Refuel<span className="text-green-400">Now</span>
-                        </span>
+                    <div className="mb-8">
+                        <Logo theme="dark" textSize="text-2xl" iconSize={24} />
                     </div>
                     <h1 className="text-5xl font-bold mb-6 leading-tight">Join the Fuel Revolution.</h1>
                     <p className="text-xl text-neutral-400">Create an account to verify fuel requests or manage your fleet efficiently.</p>

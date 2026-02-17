@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Briefcase, Plus, MapPin, Fuel, TrendingUp, ShoppingBag, BarChart3, Edit2, Trash2, X } from 'lucide-react';
 import Button from '../components/ui/Button';
+import Logo from '../components/ui/Logo';
 
 const SellerDashboardPage = () => {
     const navigate = useNavigate();
@@ -102,6 +103,34 @@ const SellerDashboardPage = () => {
         });
     };
 
+
+
+    // Toggle Station Status
+    const handleToggleStatus = async (station) => {
+        try {
+            const token = localStorage.getItem('token');
+            const newStatus = station.status === 'inactive' ? 'active' : 'inactive';
+
+            const response = await fetch(`http://localhost:5000/api/stations/${station._id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            if (response.ok) {
+                const updatedStation = await response.json();
+                setStations(stations.map(s => s._id === updatedStation._id ? updatedStation : s));
+            } else {
+                alert("Failed to update status");
+            }
+        } catch (error) {
+            console.error("Error updating status:", error);
+        }
+    };
+
     // Handle Edit Submit
     const handleUpdateStation = async (e) => {
         e.preventDefault();
@@ -135,12 +164,7 @@ const SellerDashboardPage = () => {
         <div className="min-h-screen bg-neutral-50 relative">
             {/* Navbar */}
             <nav className="bg-white border-b border-neutral-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
-                <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white">
-                        <Briefcase size={20} />
-                    </div>
-                    <span className="text-xl font-bold text-neutral-900">Refuel<span className="text-green-600">Now</span></span>
-                </div>
+                <Logo />
                 <div className="flex items-center gap-4">
                     <span className="text-sm text-neutral-600 hidden sm:inline">Welcome, {user.name}</span>
                     <Button variant="outline" onClick={handleLogout} className="text-red-600 border-red-200 hover:bg-red-50">
@@ -232,7 +256,15 @@ const SellerDashboardPage = () => {
                                             >
                                                 <Trash2 size={16} />
                                             </button>
-                                            <span className="px-2 py-1 bg-neutral-100 text-neutral-600 text-xs rounded-full font-medium">Active</span>
+                                            <button
+                                                onClick={() => handleToggleStatus(station)}
+                                                className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${station.status === 'inactive'
+                                                    ? 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+                                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                    }`}
+                                            >
+                                                {station.status === 'inactive' ? 'Inactive' : 'Active'}
+                                            </button>
                                         </div>
                                     </div>
 
@@ -241,6 +273,11 @@ const SellerDashboardPage = () => {
                                         <MapPin size={14} className="mt-0.5 shrink-0" />
                                         {station.address}
                                     </p>
+
+                                    <div className="text-xs text-neutral-400 mb-4 space-y-1">
+                                        <p>Station ID: <span className="font-mono">{station._id}</span></p>
+                                        <p>Seller ID: <span className="font-mono">{station.sellerId}</span></p>
+                                    </div>
 
                                     <div className="grid grid-cols-2 gap-3 mb-4">
                                         <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-100">
@@ -255,6 +292,19 @@ const SellerDashboardPage = () => {
 
                                     <Button variant="outline" className="w-full text-sm" onClick={() => openEditModal(station)}>
                                         <Edit2 size={14} className="mr-2" /> Update Prices
+                                    </Button>
+
+                                    <Button
+                                        variant="primary"
+                                        className="w-full mt-2 text-sm bg-blue-600 hover:bg-blue-700 border-transparent shadow-none relative"
+                                        onClick={() => navigate(`/seller/station/${station._id}/orders`)}
+                                    >
+                                        <ShoppingBag size={14} className="mr-2" /> Manage Orders
+                                        {station.pendingOrdersCount > 0 && (
+                                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full border-2 border-white">
+                                                {station.pendingOrdersCount}
+                                            </span>
+                                        )}
                                     </Button>
                                 </div>
                             ))}

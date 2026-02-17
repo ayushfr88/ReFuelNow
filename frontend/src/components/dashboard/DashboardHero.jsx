@@ -3,7 +3,27 @@ import { motion } from 'framer-motion';
 import Button from '../ui/Button';
 import { Fuel, RefreshCw, ArrowRight } from 'lucide-react';
 
-const DashboardHero = () => {
+const DashboardHero = ({ nearbyStations = [], onOrderClick, lastOrder }) => {
+
+    const handleOrderNow = () => {
+        if (nearbyStations.length > 0 && onOrderClick) {
+            // Select the first station (nearest)
+            onOrderClick(nearbyStations[0]);
+        } else {
+            // Optional: Scroll to list or show message if no stations
+            document.getElementById('nearby-stations')?.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
+    const handleRepeatOrder = () => {
+        if (lastOrder && onOrderClick) {
+            onOrderClick(lastOrder.stationId, {
+                fuelType: lastOrder.fuelType,
+                quantity: lastOrder.quantity
+            });
+        }
+    };
+
     return (
         <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl shadow-neutral-100/50 border border-neutral-100 mb-12 flex flex-col md:flex-row gap-12 items-center overflow-hidden relative">
             {/* Background Decoration */}
@@ -25,13 +45,22 @@ const DashboardHero = () => {
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                    <Button variant="primary" className="shadow-lg shadow-green-500/20 py-4 px-8 text-lg">
+                    <Button
+                        onClick={handleOrderNow}
+                        variant="primary"
+                        className="shadow-lg shadow-green-500/20 py-4 px-8 text-lg"
+                    >
                         <Fuel className="mr-2" size={20} />
                         Order Now
                     </Button>
-                    <Button variant="outline" className="border-2 py-4 px-8 text-lg hover:border-primary hover:text-primary">
+                    <Button
+                        variant="outline"
+                        onClick={handleRepeatOrder}
+                        disabled={!lastOrder}
+                        className="border-2 py-4 px-8 text-lg hover:border-primary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                         <RefreshCw className="mr-2" size={20} />
-                        Repeat Last Order
+                        {lastOrder ? 'Repeat Last Order' : 'No Previous Order'}
                     </Button>
                 </div>
             </div>
@@ -77,7 +106,7 @@ const DashboardHero = () => {
                     </div>
                     <div>
                         <p className="text-xs text-neutral-500 font-semibold uppercase">Current Price</p>
-                        <p className="text-lg font-bold text-neutral-900">$3.45<span className="text-xs text-neutral-400 font-normal">/gal</span></p>
+                        <p className="text-lg font-bold text-neutral-900">₹94.50<span className="text-xs text-neutral-400 font-normal">/L</span></p>
                     </div>
                 </motion.div>
             </div>

@@ -1,0 +1,6 @@
+--- ALL USERS ---
+ID: 6991bab8219f587179c47f72 | Role: customer | Name: Ayush Patel
+ID: 6993d9e661127e13c46cc025 | Role: seller | Name: Ayush Patel
+
+--- ALL STATIONS ---
+Station: reliance fuel station | SellerID: 6993d9e661127e13c46cc025

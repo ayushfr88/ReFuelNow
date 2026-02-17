@@ -3,6 +3,8 @@ import { MapPin, Bell, Search, Filter, Fuel, Clock, Navigation } from 'lucide-re
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import WeeklySummary from '../components/dashboard/WeeklySummary';
 import DashboardHero from '../components/dashboard/DashboardHero';
+import OrderModal from '../components/dashboard/OrderModal';
+import RejectedOrderModal from '../components/dashboard/RejectedOrderModal';
 
 const DashboardPage = () => {
     const [address, setAddress] = useState('Detecting location...');
@@ -10,8 +12,23 @@ const DashboardPage = () => {
     const [coordinates, setCoordinates] = useState(null);
     const [nearbyStations, setNearbyStations] = useState([]);
     const [loadingStations, setLoadingStations] = useState(false);
+    const [selectedStation, setSelectedStation] = useState(null);
+    const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+    const [searchRadius, setSearchRadius] = useState(5); // Default 5km
+    const [lastOrder, setLastOrder] = useState(null);
+    const [orderInitialValues, setOrderInitialValues] = useState(null);
+
+    const [isRejectedModalOpen, setIsRejectedModalOpen] = useState(false);
+    const [rejectedOrder, setRejectedOrder] = useState(null);
 
     useEffect(() => {
+        fetchLastOrder();
+
+        // Poll for order updates every 5 seconds
+        const intervalId = setInterval(() => {
+            fetchLastOrder(true);
+        }, 5000);
+
         if (!navigator.geolocation) {
             setAddress('Geolocation not supported');
             return;
@@ -24,12 +41,28 @@ const DashboardPage = () => {
 
             // Reverse Geocoding
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                console.log(`Fetching address for lat: ${latitude}, lng: ${longitude}`);
+                // Use our backend proxy to avoid CORS issues
+                const response = await fetch(`http://localhost:5000/api/utility/geocode?lat=${latitude}&lng=${longitude}`);
+
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+
                 const data = await response.json();
-                setAddress(data.display_name || 'Address not found');
+                console.log('Geocoding response:', data);
+
+                if (data.display_name) {
+                    setAddress(data.display_name);
+                } else if (data.error) {
+                    setAddress('Location not found');
+                    console.error('Geocoding API error:', data.error);
+                } else {
+                    setAddress('Address not found');
+                }
             } catch (error) {
                 console.error("Error fetching address:", error);
-                setAddress('Unable to fetch address');
+                setAddress('Address unavailable');
             }
 
             // Fetch Nearby Stations
@@ -44,13 +77,50 @@ const DashboardPage = () => {
                 setAddress('Unable to retrieve location');
             }
         });
+
+        return () => clearInterval(intervalId);
     }, []);
 
-    const fetchNearbyStations = async (lat, lng) => {
+    const fetchLastOrder = async (isPolling = false) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch('http://localhost:5000/api/orders', {
+                headers: { 'x-auth-token': token }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.length > 0) {
+                    const newOrderData = data[0];
+
+                    if (isPolling) {
+                        setLastOrder(prevOrder => {
+                            // Check if status changed to rejected
+                            if (prevOrder && prevOrder._id === newOrderData._id &&
+                                prevOrder.status !== 'rejected' && newOrderData.status === 'rejected') {
+                                setRejectedOrder(newOrderData);
+                                setIsRejectedModalOpen(true);
+                            }
+                            return newOrderData;
+                        });
+                    } else {
+                        setLastOrder(newOrderData);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching last order:", error);
+        }
+    };
+
+
+
+    const fetchNearbyStations = async (lat, lng, dist = 5) => {
         setLoadingStations(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/stations/nearby?lat=${lat}&lng=${lng}`, {
+            const response = await fetch(`http://localhost:5000/api/stations/nearby?lat=${lat}&lng=${lng}&dist=${dist}`, {
                 headers: { 'x-auth-token': token }
             });
             if (response.ok) {
@@ -64,19 +134,49 @@ const DashboardPage = () => {
         }
     };
 
+    const handleOrderClick = (station, initialValues = null) => {
+        setSelectedStation(station);
+        setOrderInitialValues(initialValues);
+        setIsOrderModalOpen(true);
+    };
+
     return (
         <div className="min-h-screen bg-neutral-50 pb-20">
             <DashboardNavbar address={address} permissionStatus={permissionStatus} />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
-                <DashboardHero />
+                <DashboardHero
+                    nearbyStations={nearbyStations}
+                    onOrderClick={handleOrderClick}
+                    lastOrder={lastOrder}
+                />
                 <WeeklySummary />
 
                 {/* Nearby Stations Section */}
-                <div>
-                    <div className="flex justify-between items-center mb-6">
+                <div id="nearby-stations">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <h2 className="text-2xl font-bold text-neutral-900">Nearby Fuel Stations</h2>
-                        <button className="text-sm font-semibold text-green-600 hover:text-green-700">View All</button>
+
+                        <div className="flex items-center gap-4 bg-white p-2 rounded-xl border border-neutral-200 shadow-sm">
+                            <span className="text-sm font-medium text-neutral-600 pl-2">Distance:</span>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="50"
+                                    value={searchRadius}
+                                    onChange={(e) => setSearchRadius(parseInt(e.target.value))}
+                                    className="w-32 accent-neutral-900 cursor-pointer"
+                                />
+                                <span className="text-sm font-bold text-neutral-900 w-12">{searchRadius} km</span>
+                            </div>
+                            <button
+                                onClick={() => coordinates && fetchNearbyStations(coordinates.latitude, coordinates.longitude, searchRadius)}
+                                className="bg-neutral-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-neutral-800 transition-colors"
+                            >
+                                Apply
+                            </button>
+                        </div>
                     </div>
 
                     {loadingStations ? (
@@ -94,8 +194,7 @@ const DashboardPage = () => {
                                             <Fuel size={20} />
                                         </div>
                                         <span className="text-xs font-medium bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full">
-                                            {/* Distance would be calculated in backend or here */}
-                                            ~2.5 km
+                                            {typeof station.distance === 'number' ? `${station.distance.toFixed(1)} km` : 'N/A'}
                                         </span>
                                     </div>
                                     <h3 className="text-lg font-bold text-neutral-900 mb-1">{station.stationName}</h3>
@@ -112,7 +211,10 @@ const DashboardPage = () => {
                                         </div>
                                     </div>
 
-                                    <button className="w-full py-2 bg-neutral-900 text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2">
+                                    <button
+                                        onClick={() => handleOrderClick(station)}
+                                        className="w-full py-2 bg-neutral-900 text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
+                                    >
                                         Order Now
                                     </button>
                                 </div>
@@ -121,6 +223,22 @@ const DashboardPage = () => {
                     )}
                 </div>
             </main>
+
+            <OrderModal
+                isOpen={isOrderModalOpen}
+                onClose={() => {
+                    setIsOrderModalOpen(false);
+                    setOrderInitialValues(null);
+                }}
+                station={selectedStation}
+                initialValues={orderInitialValues}
+            />
+
+            <RejectedOrderModal
+                isOpen={isRejectedModalOpen}
+                onClose={() => setIsRejectedModalOpen(false)}
+                order={rejectedOrder}
+            />
         </div>
     );
 };

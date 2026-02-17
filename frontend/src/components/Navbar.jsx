@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, ChevronDown, Droplet } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from './ui/Button';
+import Logo from './ui/Logo';
 import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
@@ -34,14 +35,7 @@ const Navbar = () => {
         >
             <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
                 {/* Logo */}
-                <div className="flex items-center gap-2 cursor-pointer">
-                    <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-white">
-                        <Droplet size={20} fill="currentColor" />
-                    </div>
-                    <span className="text-xl font-bold tracking-tight text-neutral-800">
-                        Refuel<span className="text-primary">Now</span>
-                    </span>
-                </div>
+                <Logo />
 
                 {/* Desktop Navigation */}
                 <div className="hidden md:flex items-center gap-8">

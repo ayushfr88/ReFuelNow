@@ -17,8 +17,10 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
+import MyOrdersPage from './pages/MyOrdersPage';
 import SellerDashboardPage from './pages/SellerDashboardPage';
 import AddStationPage from './pages/AddStationPage';
+import StationOrdersPage from './pages/StationOrdersPage';
 
 const LandingPage = () => (
   <>
@@ -47,8 +49,10 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/dashboard/profile" element={<ProfilePage />} />
+        <Route path="/dashboard/orders" element={<MyOrdersPage />} />
         <Route path="/seller-dashboard" element={<SellerDashboardPage />} />
         <Route path="/add-station" element={<AddStationPage />} />
+        <Route path="/seller/station/:stationId/orders" element={<StationOrdersPage />} />
       </Routes>
     </Router>
   );

@@ -4,6 +4,7 @@ import { Mail, Lock, ArrowLeft, Droplet } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Logo from '../components/ui/Logo';
 import { Link, useNavigate } from 'react-router-dom';
+import { useGoogleLogin } from '@react-oauth/google';
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -13,6 +14,47 @@ const LoginPage = () => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    const handleGoogleLogin = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const response = await fetch('http://localhost:5000/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: tokenResponse.access_token })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Google Login failed');
+                }
+
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('token', data.token);
+
+                if (data.user.role === 'customer') {
+                    navigate('/dashboard');
+                } else if (data.user.role === 'seller') {
+                    navigate('/seller-dashboard');
+                } else if (data.user.role === 'delivery_man') {
+                    navigate('/delivery-dashboard');
+                } else {
+                    navigate('/');
+                }
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        },
+        onError: () => {
+            setError('Google Login failed');
+        }
+    });
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -47,6 +89,8 @@ const LoginPage = () => {
                 navigate('/dashboard');
             } else if (data.user.role === 'seller') {
                 navigate('/seller-dashboard');
+            } else if (data.user.role === 'delivery_man') {
+                navigate('/delivery-dashboard');
             } else {
                 navigate('/');
             }
@@ -156,7 +200,11 @@ const LoginPage = () => {
                         <span className="relative bg-white px-4 text-sm text-neutral-500">OR</span>
                     </div>
 
-                    <button className="w-full py-3 border border-neutral-200 rounded-xl flex items-center justify-center gap-3 hover:bg-neutral-50 transition-all font-medium text-neutral-700 bg-white">
+                    <button 
+                        type="button"
+                        onClick={() => handleGoogleLogin()}
+                        className="w-full py-3 border border-neutral-200 rounded-xl flex items-center justify-center gap-3 hover:bg-neutral-50 transition-all font-medium text-neutral-700 bg-white"
+                    >
                         <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
                         Continue with Google
                     </button>

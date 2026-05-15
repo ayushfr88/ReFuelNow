@@ -6,8 +6,21 @@ const Logo = ({ className = "", iconSize = 20, textSize = "text-xl", theme = "li
     const textColor = theme === 'dark' ? 'text-white' : 'text-neutral-900';
     const highlightColor = theme === 'dark' ? 'text-green-400' : 'text-green-600';
 
+    const getDestination = () => {
+        try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+                return user.role === 'seller' ? '/seller-dashboard' : '/dashboard';
+            }
+        } catch (e) {
+            console.error('Error parsing user data', e);
+        }
+        return '/';
+    };
+
     return (
-        <Link to="/" className={`flex items-center gap-2 cursor-pointer ${className}`}>
+        <Link to={getDestination()} className={`flex items-center gap-2 cursor-pointer ${className}`}>
             <div className={`w-8 h-8 bg-gradient-to-br from-green-600 to-green-400 rounded-lg flex items-center justify-center text-white ${theme === 'light' ? 'shadow-sm shadow-green-200' : ''}`}>
                 <Droplet size={iconSize} fill="currentColor" strokeWidth={2.5} />
             </div>

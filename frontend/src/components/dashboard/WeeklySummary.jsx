@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Droplet, Truck, RotateCcw } from 'lucide-react';
+import { ShoppingBag, Droplet, IndianRupee, Zap } from 'lucide-react';
 
 const SummaryCard = ({ title, value, unit, icon: Icon, color }) => (
     <div className="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm hover:shadow-md transition-all group">
@@ -20,34 +20,52 @@ const SummaryCard = ({ title, value, unit, icon: Icon, color }) => (
     </div>
 );
 
-const WeeklySummary = () => {
+const WeeklySummary = ({ orders = [] }) => {
+    // Filter for orders in the past 7 days
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const weeklyOrders = orders.filter(order => new Date(order.createdAt) >= oneWeekAgo);
+
+    const totalOrders = weeklyOrders.length;
+    let totalQuantity = 0;
+    let moneySpent = 0;
+    let evsCharged = 0;
+
+    weeklyOrders.forEach(order => {
+        totalQuantity += order.quantity || 0;
+        moneySpent += order.totalPrice || 0;
+        if (order.fuelType === 'ev') {
+            evsCharged++;
+        }
+    });
+
     const stats = [
         {
             title: "Total Orders",
-            value: "12",
+            value: totalOrders.toString(),
             unit: "orders",
             icon: ShoppingBag,
             color: "bg-blue-500"
         },
         {
             title: "Total Quantity",
-            value: "450",
-            unit: "gallons",
+            value: totalQuantity.toString(),
+            unit: orders.some(o => o.fuelType === 'ev') ? "units (L / kw)" : "liters",
             icon: Droplet,
             color: "bg-green-500"
         },
         {
-            title: "Unique Assets",
-            value: "8",
-            unit: "vehicles",
-            icon: Truck,
+            title: "Money Spent",
+            value: `₹${moneySpent.toLocaleString()}`,
+            unit: "this week",
+            icon: IndianRupee,
             color: "bg-orange-500"
         },
         {
-            title: "Total Refills",
-            value: "24",
-            unit: "times",
-            icon: RotateCcw,
+            title: "EVs Charged",
+            value: evsCharged.toString(),
+            unit: "vehicles",
+            icon: Zap,
             color: "bg-purple-500"
         }
     ];

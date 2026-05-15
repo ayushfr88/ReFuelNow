@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Briefcase, Plus, MapPin, Fuel, TrendingUp, ShoppingBag, BarChart3, Edit2, Trash2, X } from 'lucide-react';
+import { LogOut, Briefcase, Plus, MapPin, Fuel, TrendingUp, ShoppingBag, BarChart3, Edit2, Trash2, X, User, Zap, Shield, UserPlus, IndianRupee } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Logo from '../components/ui/Logo';
 
@@ -18,7 +18,9 @@ const SellerDashboardPage = () => {
     const [editForm, setEditForm] = useState({
         stationName: '',
         dieselPrice: '',
-        petrolPrice: ''
+        petrolPrice: '',
+        type: 'fuel',
+        evPricePerKwh: ''
     });
 
     useEffect(() => {
@@ -26,15 +28,8 @@ const SellerDashboardPage = () => {
         const token = localStorage.getItem('token');
 
         if (storedUser && token) {
-            const parsedUser = JSON.parse(storedUser);
-            if (parsedUser.role !== 'seller') {
-                navigate('/dashboard');
-            } else {
-                setUser(parsedUser);
-                fetchDashboardData(token);
-            }
-        } else {
-            navigate('/login');
+            setUser(JSON.parse(storedUser));
+            fetchDashboardData(token);
         }
     }, [navigate]);
 
@@ -98,8 +93,10 @@ const SellerDashboardPage = () => {
         setEditingStation(station);
         setEditForm({
             stationName: station.stationName,
-            dieselPrice: station.dieselPrice,
-            petrolPrice: station.petrolPrice
+            dieselPrice: station.dieselPrice || '',
+            petrolPrice: station.petrolPrice || '',
+            type: station.type || 'fuel',
+            evPricePerKwh: station.evPricePerKwh || ''
         });
     };
 
@@ -167,6 +164,9 @@ const SellerDashboardPage = () => {
                 <Logo />
                 <div className="flex items-center gap-4">
                     <span className="text-sm text-neutral-600 hidden sm:inline">Welcome, {user.name}</span>
+                    <Button variant="outline" onClick={() => navigate('/seller-dashboard/profile')} className="text-neutral-600 border-neutral-200 hover:bg-neutral-50 w-10 px-0 flex justify-center">
+                        <User size={18} />
+                    </Button>
                     <Button variant="outline" onClick={handleLogout} className="text-red-600 border-red-200 hover:bg-red-50">
                         <LogOut size={16} className="mr-2" /> Sign Out
                     </Button>
@@ -211,6 +211,44 @@ const SellerDashboardPage = () => {
                                 <h3 className="text-2xl font-bold text-neutral-900">{stations.length}</h3>
                             </div>
                         </div>
+
+                        {/* Earnings & Wallet Card */}
+                        <div 
+                            className="bg-neutral-900 p-6 rounded-2xl shadow-xl flex items-center justify-between group cursor-pointer hover:scale-[1.02] transition-all md:col-span-3 text-white"
+                            onClick={() => navigate('/seller-dashboard/wallet')}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-primary/20 text-primary rounded-full flex items-center justify-center">
+                                    <ShoppingBag size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-neutral-400 font-medium">Platform Earnings</p>
+                                    <h3 className="text-xl font-bold">Wallet & Revenue</h3>
+                                </div>
+                            </div>
+                            <Button variant="primary" className="bg-primary hover:bg-green-600 border-none transition-colors">
+                                <IndianRupee size={18} className="mr-2" /> View Balance
+                            </Button>
+                        </div>
+
+                        {/* Delivery Men Card */}
+                        <div 
+                            className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm flex items-center justify-between group cursor-pointer hover:border-green-500 transition-all md:col-span-3"
+                            onClick={() => navigate('/seller-dashboard/delivery-men')}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                                    <Shield size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-neutral-500 font-medium">Delivery Personnel</p>
+                                    <h3 className="text-xl font-bold text-neutral-900">Manage Your Team</h3>
+                                </div>
+                            </div>
+                            <Button variant="outline" className="group-hover:bg-green-600 group-hover:text-white group-hover:border-transparent transition-colors">
+                                <UserPlus size={18} className="mr-2" /> Add/Manage Staff
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -245,8 +283,8 @@ const SellerDashboardPage = () => {
                             {stations.map(station => (
                                 <div key={station._id} className="bg-white rounded-xl border border-neutral-200 shadow-sm hover:shadow-md transition-shadow p-6 group">
                                     <div className="flex items-start justify-between mb-4">
-                                        <div className="bg-green-100 p-2 rounded-lg text-green-700">
-                                            <Fuel size={24} />
+                                        <div className={`p-2 rounded-lg ${station.type === 'ev' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
+                                            {station.type === 'ev' ? <Zap size={24} /> : <Fuel size={24} />}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
@@ -280,14 +318,23 @@ const SellerDashboardPage = () => {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3 mb-4">
-                                        <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-100">
-                                            <div className="text-xs text-neutral-500 mb-1">Diesel</div>
-                                            <div className="font-bold text-neutral-900">₹{station.dieselPrice}</div>
-                                        </div>
-                                        <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-100">
-                                            <div className="text-xs text-neutral-500 mb-1">Petrol</div>
-                                            <div className="font-bold text-neutral-900">₹{station.petrolPrice}</div>
-                                        </div>
+                                        {station.type === 'ev' ? (
+                                            <div className="col-span-2 bg-neutral-50 p-3 rounded-lg border border-neutral-100 flex justify-between items-center">
+                                                <div className="text-xs text-neutral-500">Price per kWh</div>
+                                                <div className="font-bold text-neutral-900">₹{station.evPricePerKwh}</div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-100">
+                                                    <div className="text-xs text-neutral-500 mb-1">Diesel</div>
+                                                    <div className="font-bold text-neutral-900">₹{station.dieselPrice}</div>
+                                                </div>
+                                                <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-100">
+                                                    <div className="text-xs text-neutral-500 mb-1">Petrol</div>
+                                                    <div className="font-bold text-neutral-900">₹{station.petrolPrice}</div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
 
                                     <Button variant="outline" className="w-full text-sm" onClick={() => openEditModal(station)}>
@@ -365,7 +412,9 @@ const SellerDashboardPage = () => {
                         </div>
                         <form onSubmit={handleUpdateStation} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-neutral-700 mb-1">Station Name</label>
+                                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                                    {editForm.type === 'ev' ? 'Service/Van Name' : 'Station Name'}
+                                </label>
                                 <input
                                     type="text"
                                     value={editForm.stationName}
@@ -374,28 +423,41 @@ const SellerDashboardPage = () => {
                                     required
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            {editForm.type === 'ev' ? (
                                 <div>
-                                    <label className="block text-sm font-medium text-neutral-700 mb-1">Diesel Price (₹)</label>
+                                    <label className="block text-sm font-medium text-neutral-700 mb-1">Price per kWh (₹)</label>
                                     <input
                                         type="number"
-                                        value={editForm.dieselPrice}
-                                        onChange={(e) => setEditForm({ ...editForm, dieselPrice: e.target.value })}
-                                        className="w-full p-3 rounded-lg border border-neutral-200 focus:border-green-500 outline-none"
+                                        value={editForm.evPricePerKwh}
+                                        onChange={(e) => setEditForm({ ...editForm, evPricePerKwh: e.target.value })}
+                                        className="w-full p-3 rounded-lg border border-neutral-200 focus:border-purple-500 outline-none"
                                         required
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-neutral-700 mb-1">Petrol Price (₹)</label>
-                                    <input
-                                        type="number"
-                                        value={editForm.petrolPrice}
-                                        onChange={(e) => setEditForm({ ...editForm, petrolPrice: e.target.value })}
-                                        className="w-full p-3 rounded-lg border border-neutral-200 focus:border-green-500 outline-none"
-                                        required
-                                    />
+                            ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-neutral-700 mb-1">Diesel Price (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={editForm.dieselPrice}
+                                            onChange={(e) => setEditForm({ ...editForm, dieselPrice: e.target.value })}
+                                            className="w-full p-3 rounded-lg border border-neutral-200 focus:border-green-500 outline-none"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-neutral-700 mb-1">Petrol Price (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={editForm.petrolPrice}
+                                            onChange={(e) => setEditForm({ ...editForm, petrolPrice: e.target.value })}
+                                            className="w-full p-3 rounded-lg border border-neutral-200 focus:border-green-500 outline-none"
+                                            required
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                             <div className="flex gap-3 pt-2">
                                 <Button type="button" variant="outline" className="flex-1" onClick={() => setEditingStation(null)}>
                                     Cancel

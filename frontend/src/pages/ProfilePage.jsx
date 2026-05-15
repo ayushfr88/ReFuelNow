@@ -28,8 +28,6 @@ const ProfilePage = () => {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             setPhoneNumber(parsedUser.phone || '');
-        } else {
-            navigate('/login');
         }
     }, [navigate]);
 
@@ -171,7 +169,7 @@ const ProfilePage = () => {
             <DashboardNavbar address="Dashboard" permissionStatus="granted" />
 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <Link to="/dashboard" className="inline-flex items-center text-neutral-500 hover:text-primary mb-8 transition-colors">
+                <Link to={user.role === 'seller' ? "/seller-dashboard" : "/dashboard"} className="inline-flex items-center text-neutral-500 hover:text-primary mb-8 transition-colors">
                     <ArrowLeft size={20} className="mr-2" /> Back to Dashboard
                 </Link>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Fuel, ArrowRight } from 'lucide-react';
+import { X, Fuel, ArrowRight, Zap } from 'lucide-react';
 import Button from '../ui/Button';
 
 const OrderModal = ({ isOpen, onClose, station, initialValues }) => {
@@ -10,17 +10,36 @@ const OrderModal = ({ isOpen, onClose, station, initialValues }) => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
 
+    const [useWallet, setUseWallet] = useState(false);
+    const [walletBalance, setWalletBalance] = useState(0);
+
+    const fetchWallet = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            const res = await fetch('http://localhost:5000/api/wallet', { headers: { 'x-auth-token': token } });
+            if (res.ok) {
+                const data = await res.json();
+                setWalletBalance(data.walletBalance || 0);
+            }
+        } catch (e) {
+            console.error('Error fetching wallet balance');
+        }
+    };
+
     useEffect(() => {
         if (isOpen) {
+            fetchWallet();
             // Reset state when modal opens
             if (initialValues) {
                 setFuelType(initialValues.fuelType);
                 setQuantity(initialValues.quantity);
             } else {
-                setFuelType('diesel');
+                setFuelType(station?.type === 'ev' ? 'ev' : 'diesel');
                 setQuantity('');
             }
             setTotalPrice(0);
+            setUseWallet(false);
             setError(null);
             setSuccess(false);
         }
@@ -32,7 +51,9 @@ const OrderModal = ({ isOpen, onClose, station, initialValues }) => {
             return;
         }
 
-        const price = fuelType === 'diesel' ? station.dieselPrice : station.petrolPrice;
+        const price = fuelType === 'ev' 
+            ? station.evPricePerKwh 
+            : (fuelType === 'diesel' ? station.dieselPrice : station.petrolPrice);
         setTotalPrice(price * parseFloat(quantity));
     }, [fuelType, quantity, station]);
 
@@ -45,6 +66,13 @@ const OrderModal = ({ isOpen, onClose, station, initialValues }) => {
 
         try {
             const token = localStorage.getItem('token');
+            console.log("Placing order with payload:", {
+                stationId: station._id,
+                fuelType,
+                quantity: parseFloat(quantity),
+                useWallet
+            });
+
             const response = await fetch('http://localhost:5000/api/orders', {
                 method: 'POST',
                 headers: {
@@ -54,7 +82,8 @@ const OrderModal = ({ isOpen, onClose, station, initialValues }) => {
                 body: JSON.stringify({
                     stationId: station._id,
                     fuelType,
-                    quantity: parseFloat(quantity)
+                    quantity: parseFloat(quantity),
+                    useWallet
                 })
             });
 
@@ -91,40 +120,58 @@ const OrderModal = ({ isOpen, onClose, station, initialValues }) => {
 
                 {success ? (
                     <div className="p-12 text-center">
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
-                            <Fuel size={32} />
+                        <div className={`w-16 h-16 ${station?.type === 'ev' ? 'bg-purple-100 text-purple-600' : 'bg-green-100 text-green-600'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                            {station?.type === 'ev' ? <Zap size={32} /> : <Fuel size={32} />}
                         </div>
                         <h3 className="text-2xl font-bold text-neutral-900 mb-2">Order Confirmed!</h3>
-                        <p className="text-neutral-500">Your fuel is on the way.</p>
+                        <p className="text-neutral-500">
+                            {station?.type === 'ev' ? 'Your EV station reservation is confirmed.' : 'Your fuel is on the way.'}
+                        </p>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="p-6 space-y-6">
                         {/* Fuel Type Selection */}
                         <div className="space-y-3">
-                            <label className="text-sm font-semibold text-neutral-700">Select Fuel Type</label>
+                            <label className="text-sm font-semibold text-neutral-700">
+                                {station?.type === 'ev' ? 'Service Type' : 'Select Fuel Type'}
+                            </label>
                             <div className="grid grid-cols-2 gap-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setFuelType('diesel')}
-                                    className={`p-4 rounded-xl border-2 transition-all text-left ${fuelType === 'diesel' ? 'border-green-500 bg-green-50' : 'border-neutral-200 hover:border-green-200'}`}
-                                >
-                                    <div className="font-bold text-neutral-900">Diesel</div>
-                                    <div className="text-sm text-neutral-500">₹{station.dieselPrice}/L</div>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setFuelType('petrol')}
-                                    className={`p-4 rounded-xl border-2 transition-all text-left ${fuelType === 'petrol' ? 'border-green-500 bg-green-50' : 'border-neutral-200 hover:border-green-200'}`}
-                                >
-                                    <div className="font-bold text-neutral-900">Petrol</div>
-                                    <div className="text-sm text-neutral-500">₹{station.petrolPrice}/L</div>
-                                </button>
+                                {station?.type === 'ev' ? (
+                                    <button
+                                        type="button"
+                                        className="p-4 rounded-xl border-2 transition-all text-left border-purple-500 bg-purple-50 col-span-2"
+                                    >
+                                        <div className="font-bold text-neutral-900">EV Charging</div>
+                                        <div className="text-sm text-neutral-500">₹{station.evPricePerKwh}/kw</div>
+                                    </button>
+                                ) : (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFuelType('diesel')}
+                                            className={`p-4 rounded-xl border-2 transition-all text-left ${fuelType === 'diesel' ? 'border-green-500 bg-green-50' : 'border-neutral-200 hover:border-green-200'}`}
+                                        >
+                                            <div className="font-bold text-neutral-900">Diesel</div>
+                                            <div className="text-sm text-neutral-500">₹{station.dieselPrice}/L</div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFuelType('petrol')}
+                                            className={`p-4 rounded-xl border-2 transition-all text-left ${fuelType === 'petrol' ? 'border-green-500 bg-green-50' : 'border-neutral-200 hover:border-green-200'}`}
+                                        >
+                                            <div className="font-bold text-neutral-900">Petrol</div>
+                                            <div className="text-sm text-neutral-500">₹{station.petrolPrice}/L</div>
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
 
                         {/* Quantity Input */}
                         <div className="space-y-3">
-                            <label className="text-sm font-semibold text-neutral-700">Quantity (Litres)</label>
+                            <label className="text-sm font-semibold text-neutral-700">
+                                {station?.type === 'ev' ? 'Quantity (kw)' : 'Quantity (Litres)'}
+                            </label>
                             <div className="relative">
                                 <input
                                     type="number"
@@ -136,14 +183,35 @@ const OrderModal = ({ isOpen, onClose, station, initialValues }) => {
                                     placeholder="Enter quantity"
                                     className="w-full p-4 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                                 />
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 font-medium">L</div>
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 font-medium">
+                                    {station?.type === 'ev' ? 'kw' : 'L'}
+                                </div>
                             </div>
                         </div>
 
                         {/* Total Price Display */}
-                        <div className="bg-neutral-900 rounded-xl p-6 text-white flex justify-between items-center">
+                        <div className="bg-neutral-900 rounded-xl p-6 text-white flex justify-between items-center mb-4">
                             <span className="text-neutral-400 font-medium">Total Price</span>
                             <span className="text-2xl font-bold">₹{totalPrice.toFixed(2)}</span>
+                        </div>
+
+                        {/* Wallet Payment Option */}
+                        <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="font-semibold text-neutral-800 flex items-center gap-2">
+                                    Wallet Balance
+                                </span>
+                                <span className="font-bold">₹{walletBalance.toFixed(2)}</span>
+                            </div>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    checked={useWallet} 
+                                    onChange={(e) => setUseWallet(e.target.checked)}
+                                    className="w-4 h-4 text-green-600 bg-white border-neutral-300 rounded focus:ring-green-500 focus:ring-2 cursor-pointer"
+                                />
+                                <span className="text-sm text-neutral-600">Pay using wallet</span>
+                            </label>
                         </div>
 
                         {error && (

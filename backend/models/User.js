@@ -17,8 +17,13 @@ const UserSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['customer', 'seller'], // Changed to 'seller' as per request
+        enum: ['customer', 'seller', 'delivery_man'],
         default: 'customer'
+    },
+    sellerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
     },
     phone: {
         type: String,
@@ -27,6 +32,10 @@ const UserSchema = new mongoose.Schema({
     profilePicture: {
         type: String,
         default: ''
+    },
+    walletBalance: {
+        type: Number,
+        default: 0
     },
     createdAt: {
         type: Date,

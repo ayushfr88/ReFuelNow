@@ -16,7 +16,9 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/stations', require('./routes/stationRoutes'));
 app.use('/api/seller', require('./routes/sellerRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/utility', require('./routes/utilityRoutes'));
+app.use('/api/wallet', require('./routes/walletRoutes'));
 
 // Basic Route
 app.get('/', (req, res) => {
@@ -24,10 +26,7 @@ app.get('/', (req, res) => {
 });
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
+mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB Connected'))
     .catch(err => console.log(err));
 

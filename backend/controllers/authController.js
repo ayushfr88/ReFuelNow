@@ -1,5 +1,9 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+const crypto = require('crypto');
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'dummy-client-id');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -88,6 +92,57 @@ exports.loginUser = async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
+    }
+};
+
+// @desc    Authenticate or Register user with Google
+// @route   POST /api/auth/google
+// @access  Public
+exports.googleLogin = async (req, res) => {
+    try {
+        const { credential } = req.body; // Actually an access token sent from the frontend
+        
+        // Fetch user info from Google using the access token
+        const googleRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${credential}` }
+        });
+        
+        if (!googleRes.ok) {
+            return res.status(400).json({ message: 'Invalid Google token' });
+        }
+        
+        const payload = await googleRes.json();
+        
+        let user = await User.findOne({ email: payload.email });
+        
+        if (!user) {
+            // Auto register the user
+            const randomPassword = crypto.randomBytes(20).toString('hex');
+            user = new User({
+                name: payload.name,
+                email: payload.email,
+                password: randomPassword,
+                role: 'customer',
+                profilePicture: payload.picture
+            });
+            await user.save();
+        }
+
+        const token = generateToken(user.id);
+
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                profilePicture: user.profilePicture
+            }
+        });
+    } catch (err) {
+        console.error('Google Auth Error:', err);
+        res.status(500).json({ message: 'Google Authentication failed' });
     }
 };
 // @desc    Update user password

@@ -33,6 +33,26 @@ const OrderSchema = new mongoose.Schema({
         enum: ['pending', 'accepted', 'rejected', 'completed', 'cancelled'],
         default: 'pending'
     },
+    deliveryManId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    deliveryStatus: {
+        type: String,
+        enum: ['pending', 'assigned', 'out_for_delivery', 'delivered'],
+        default: 'pending'
+    },
+    paymentMethod: {
+        type: String,
+        enum: ['wallet', 'cash', null],
+        default: null
+    },
+    paymentStatus: {
+        type: String,
+        enum: ['unpaid', 'paid'],
+        default: 'unpaid'
+    },
     createdAt: {
         type: Date,
         default: Date.now

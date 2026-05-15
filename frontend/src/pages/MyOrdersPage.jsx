@@ -132,9 +132,29 @@ const MyOrdersPage = () => {
                                             <div>
                                                 <p className="text-sm font-medium text-neutral-500">Fuel Details</p>
                                                 <p className="font-semibold text-neutral-900 capitalize">{order.fuelType}</p>
-                                                <p className="text-sm text-neutral-500">{order.quantity} Litres</p>
+                                                <p className="text-sm text-neutral-500">{order.quantity} {order.fuelType === 'ev' ? 'kw' : 'Litres'}</p>
                                             </div>
                                         </div>
+
+                                        {order.deliveryManId && (
+                                            <div className="col-span-1 md:col-span-2 flex items-start gap-4 p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                                                <div className="p-2 bg-white rounded-lg text-orange-600 shadow-sm">
+                                                    <User size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-1">Your Delivery Partner</p>
+                                                    <p className="font-bold text-neutral-900">{order.deliveryManId.name}</p>
+                                                    <div className="flex items-center gap-2 text-sm text-neutral-600 mt-1">
+                                                        <Clock size={14} className="text-neutral-400" />
+                                                        Status: <span className="font-semibold capitalize text-orange-700">{order.deliveryStatus.replace(/_/g, ' ')}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-sm text-neutral-600 mt-0.5">
+                                                        <Phone size={14} className="text-neutral-400" />
+                                                        {order.deliveryManId.phone}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

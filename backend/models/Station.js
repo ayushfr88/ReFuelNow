@@ -25,13 +25,19 @@ const StationSchema = new mongoose.Schema({
             required: true
         }
     },
+    type: {
+        type: String,
+        enum: ['fuel', 'ev'],
+        default: 'fuel'
+    },
     dieselPrice: {
-        type: Number,
-        required: true
+        type: Number
     },
     petrolPrice: {
-        type: Number,
-        required: true
+        type: Number
+    },
+    evPricePerKwh: {
+        type: Number
     },
     status: {
         type: String,

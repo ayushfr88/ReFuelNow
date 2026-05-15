@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Check, ArrowLeft } from 'lucide-react';
+import { MapPin, Check, ArrowLeft, Fuel, Zap } from 'lucide-react';
 import Button from '../components/ui/Button';
 
 const AddStationPage = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
+        type: 'fuel',
         stationName: '',
         address: '',
         dieselPrice: '',
         petrolPrice: '',
+        evPricePerKwh: '',
         latitude: '',
         longitude: ''
     });
@@ -78,15 +80,21 @@ const AddStationPage = () => {
         }
 
         const stationData = {
+            type: formData.type,
             stationName: formData.stationName,
             address: formData.address,
-            dieselPrice: parseFloat(formData.dieselPrice),
-            petrolPrice: parseFloat(formData.petrolPrice),
             location: {
                 type: 'Point',
                 coordinates: [parseFloat(formData.longitude), parseFloat(formData.latitude)]
             }
         };
+
+        if (formData.type === 'fuel') {
+            stationData.dieselPrice = parseFloat(formData.dieselPrice);
+            stationData.petrolPrice = parseFloat(formData.petrolPrice);
+        } else {
+            stationData.evPricePerKwh = parseFloat(formData.evPricePerKwh);
+        }
 
         try {
             const response = await fetch('http://localhost:5000/api/stations', {
@@ -117,11 +125,36 @@ const AddStationPage = () => {
                     <ArrowLeft size={20} className="mr-2" /> Back
                 </button>
 
-                <h1 className="text-2xl font-bold mb-6">Add New Fuel Station</h1>
+                <h1 className="text-2xl font-bold mb-6">Add New Service</h1>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Service Type Selection */}
+                    <div className="space-y-3">
+                        <label className="block text-sm font-medium text-neutral-700">Service Type</label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                type="button"
+                                onClick={() => setFormData({...formData, type: 'fuel'})}
+                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${formData.type === 'fuel' ? 'border-green-500 bg-green-50 text-green-700' : 'border-neutral-200 text-neutral-500 hover:border-green-200'}`}
+                            >
+                                <Fuel size={24} />
+                                <span className="font-bold">Fuel Station</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFormData({...formData, type: 'ev'})}
+                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${formData.type === 'ev' ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-neutral-200 text-neutral-500 hover:border-purple-200'}`}
+                            >
+                                <Zap size={24} />
+                                <span className="font-bold">EV Charging Van</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">Station Name</label>
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">
+                            {formData.type === 'fuel' ? 'Station Name' : 'Service / Van Name'}
+                        </label>
                         <input
                             type="text"
                             name="stationName"
@@ -151,30 +184,44 @@ const AddStationPage = () => {
                         {locationError && <p className="text-red-500 text-sm mt-1">{locationError}</p>}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    {formData.type === 'fuel' ? (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-700 mb-2">Diesel Price (₹)</label>
+                                <input
+                                    type="number"
+                                    name="dieselPrice"
+                                    value={formData.dieselPrice}
+                                    onChange={handleChange}
+                                    className="w-full p-3 rounded-lg border border-neutral-200 focus:border-green-500 outline-none"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-700 mb-2">Petrol Price (₹)</label>
+                                <input
+                                    type="number"
+                                    name="petrolPrice"
+                                    value={formData.petrolPrice}
+                                    onChange={handleChange}
+                                    className="w-full p-3 rounded-lg border border-neutral-200 focus:border-green-500 outline-none"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    ) : (
                         <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2">Diesel Price (₹)</label>
+                            <label className="block text-sm font-medium text-neutral-700 mb-2">Price per kw (₹)</label>
                             <input
                                 type="number"
-                                name="dieselPrice"
-                                value={formData.dieselPrice}
+                                name="evPricePerKwh"
+                                value={formData.evPricePerKwh}
                                 onChange={handleChange}
-                                className="w-full p-3 rounded-lg border border-neutral-200 focus:border-green-500 outline-none"
+                                className="w-full p-3 rounded-lg border border-neutral-200 focus:border-purple-500 outline-none"
                                 required
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2">Petrol Price (₹)</label>
-                            <input
-                                type="number"
-                                name="petrolPrice"
-                                value={formData.petrolPrice}
-                                onChange={handleChange}
-                                className="w-full p-3 rounded-lg border border-neutral-200 focus:border-green-500 outline-none"
-                                required
-                            />
-                        </div>
-                    </div>
+                    )}
 
                     <Button type="submit" variant="primary" className="w-full py-3">
                         Save Station

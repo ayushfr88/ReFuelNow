@@ -54,7 +54,7 @@ const Navbar = () => {
 
                 {/* Desktop Buttons */}
                 <div className="hidden md:flex items-center gap-4">
-                    <Button variant="primary" className="px-5 py-2" onClick={handleLoginClick}>Order Fuel</Button>
+                    <Button variant="primary" className="px-5 py-2" onClick={handleLoginClick}>Sign In</Button>
                 </div>
 
                 {/* Mobile Menu Button */}
@@ -90,7 +90,7 @@ const Navbar = () => {
                                 <Button variant="primary" className="w-full justify-center" onClick={() => {
                                     setIsMobileMenuOpen(false);
                                     handleLoginClick();
-                                }}>Order Fuel</Button>
+                                }}>Sign In</Button>
                             </div>
                         </div>
                     </motion.div>

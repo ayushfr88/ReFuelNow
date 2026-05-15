@@ -1,23 +1,63 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, X, Clock, User, Droplet, Calendar, Filter } from 'lucide-react';
+import { ArrowLeft, Check, X, Clock, User, Droplet, Calendar, Filter, Zap } from 'lucide-react';
 import Button from '../components/ui/Button';
 
 const StationOrdersPage = () => {
     const { stationId } = useParams();
     const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
+    const [deliveryMen, setDeliveryMen] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [assigning, setAssigning] = useState({}); // Tracking which order is being assigned
     const [stationName, setStationName] = useState('Station Orders');
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        if (!token) {
-            navigate('/login');
-            return;
+        if (token) {
+            fetchOrders(token);
+            fetchDeliveryMen(token);
         }
-        fetchOrders(token);
     }, [stationId, navigate]);
+
+    const fetchDeliveryMen = async (token) => {
+        try {
+            const response = await fetch('http://localhost:5000/api/seller/delivery-men', {
+                headers: { 'x-auth-token': token }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setDeliveryMen(data);
+            }
+        } catch (error) {
+            console.error("Error fetching delivery men:", error);
+        }
+    };
+
+    const handleAssignDelivery = async (orderId, deliveryManId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5000/api/orders/${orderId}/assign`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token
+                },
+                body: JSON.stringify({ deliveryManId })
+            });
+
+            if (response.ok) {
+                const updatedOrder = await response.json();
+                setOrders(orders.map(o => o._id === updatedOrder._id ? updatedOrder : o));
+                alert("Delivery man assigned successfully!");
+            } else {
+                const err = await response.json();
+                alert(err.message || "Failed to assign delivery man");
+            }
+        } catch (error) {
+            console.error("Error assigning delivery man:", error);
+        }
+    };
 
     const fetchOrders = async (token) => {
         try {
@@ -123,10 +163,10 @@ const StationOrdersPage = () => {
                                             </h3>
                                             <div className="flex items-center gap-4 mt-1 text-sm text-neutral-600">
                                                 <div className="flex items-center gap-1 capitalize">
-                                                    <Droplet size={14} /> {order.fuelType}
+                                                    {order.fuelType === 'ev' ? <Zap size={14} /> : <Droplet size={14} />} {order.fuelType === 'ev' ? 'EV Charging' : order.fuelType}
                                                 </div>
                                                 <div className="font-semibold text-neutral-900">
-                                                    {order.quantity} Liters
+                                                    {order.quantity} {order.fuelType === 'ev' ? 'kw' : 'Liters'}
                                                 </div>
                                             </div>
                                         </div>
@@ -181,23 +221,48 @@ const StationOrdersPage = () => {
                                                 </span>
                                             </div>
                                             <div className="font-medium text-neutral-900">
-                                                {order.quantity}L {order.fuelType} • ₹{order.totalPrice}
+                                                {order.quantity}{order.fuelType === 'ev' ? 'kw' : 'L'} {order.fuelType === 'ev' ? 'EV Charging' : order.fuelType} • ₹{order.totalPrice}
                                             </div>
                                             <div className="text-sm text-neutral-500">
                                                 Customer: {order.customerId?.name}
                                             </div>
+                                            {order.deliveryManId && (
+                                                <div className="text-xs font-bold text-orange-600 mt-1 flex items-center gap-1">
+                                                    <User size={12} /> Assigned to: {deliveryMen.find(dm => dm._id === order.deliveryManId)?.name || 'Delivery Specialist'}
+                                                    <span className="text-neutral-400 capitalize">({order.deliveryStatus.replace(/_/g, ' ')})</span>
+                                                </div>
+                                            )}
                                         </div>
 
-                                        {/* Optional: Add "Mark Completed" button for accepted orders */}
-                                        {order.status === 'accepted' && (
-                                            <Button
-                                                size="sm"
-                                                onClick={() => handleStatusUpdate(order._id, 'completed')}
-                                                className="bg-neutral-900 text-white hover:bg-neutral-800"
-                                            >
-                                                Mark Done
-                                            </Button>
-                                        )}
+                                        <div className="flex flex-col gap-2 items-end">
+                                            {order.status === 'accepted' && !order.deliveryManId && (
+                                                <div className="flex flex-col gap-2">
+                                                    <select 
+                                                        className="text-xs p-2 rounded border border-neutral-200 outline-none focus:border-green-500"
+                                                        onChange={(e) => {
+                                                            if (e.target.value) handleAssignDelivery(order._id, e.target.value);
+                                                        }}
+                                                        defaultValue=""
+                                                    >
+                                                        <option value="" disabled>Assign Delivery Man</option>
+                                                        {deliveryMen.map(dm => (
+                                                            <option key={dm._id} value={dm._id}>{dm.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+
+                                            {/* Optional: Add "Mark Completed" button for accepted orders */}
+                                            {order.status === 'accepted' && (
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleStatusUpdate(order._id, 'completed')}
+                                                    className="bg-neutral-900 text-white hover:bg-neutral-800"
+                                                >
+                                                    Mark Done
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>

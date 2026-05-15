@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, User, Bell, Package, ChevronDown, LogOut } from 'lucide-react';
+import { MapPin, User, Bell, Package, ChevronDown, LogOut, Wallet } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Logo from '../ui/Logo';
 
 const DashboardNavbar = ({ address, onEnableLocation, permissionStatus }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const notifRef = useRef(null);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -21,6 +24,60 @@ const DashboardNavbar = ({ address, onEnableLocation, permissionStatus }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    // Fetch and poll notifications
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            try {
+                const res = await fetch('http://localhost:5000/api/notifications', {
+                    headers: { 'x-auth-token': token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setNotifications(data);
+                }
+            } catch (err) {
+                console.error("Error fetching notifications", err);
+            }
+        };
+
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Close notification dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (notifRef.current && !notifRef.current.contains(event.target)) {
+                setIsNotificationsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    const handleMarkAsRead = async (id) => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            const res = await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+                method: 'PATCH',
+                headers: { 'x-auth-token': token }
+            });
+            if (res.ok) {
+                setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
+            }
+        } catch (err) {
+            console.error("Error marking as read", err);
+        }
+    };
+
+    const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
         <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-neutral-100">
@@ -58,10 +115,50 @@ const DashboardNavbar = ({ address, onEnableLocation, permissionStatus }) => {
                             Home
                         </Link>
 
-                        <button className="p-2 text-neutral-500 hover:text-primary transition-colors relative">
-                            <Bell size={20} />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                        </button>
+                        {/* Notifications Dropdown */}
+                        <div className="relative" ref={notifRef}>
+                            <button 
+                                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)} 
+                                className="p-2 text-neutral-500 hover:text-primary transition-colors relative"
+                            >
+                                <Bell size={20} />
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                                )}
+                            </button>
+
+                            <AnimatePresence>
+                                {isNotificationsOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-neutral-100 py-2 overflow-hidden max-h-96 overflow-y-auto"
+                                    >
+                                        <div className="px-4 py-2 border-b border-neutral-100 mb-2 flex justify-between items-center">
+                                            <p className="text-xs font-semibold text-neutral-400 uppercase">Notifications</p>
+                                        </div>
+                                        {notifications.length === 0 ? (
+                                            <div className="px-4 py-4 text-sm text-neutral-500 text-center">No notifications</div>
+                                        ) : (
+                                            notifications.map(notif => (
+                                                <div 
+                                                    key={notif._id} 
+                                                    onClick={() => {
+                                                        if(!notif.isRead) handleMarkAsRead(notif._id);
+                                                    }}
+                                                    className={`px-4 py-3 text-sm cursor-pointer hover:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0 ${!notif.isRead ? 'bg-green-50/50' : ''}`}
+                                                >
+                                                    <p className={`text-neutral-800 ${!notif.isRead ? 'font-semibold' : ''}`}>{notif.message}</p>
+                                                    <span className="text-xs text-neutral-400 mt-1 block">{new Date(notif.createdAt).toLocaleString()}</span>
+                                                </div>
+                                            ))
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
 
                         {/* Profile Dropdown */}
                         <div className="relative" ref={dropdownRef}>
@@ -95,6 +192,15 @@ const DashboardNavbar = ({ address, onEnableLocation, permissionStatus }) => {
                                         >
                                             <User size={16} />
                                             My Profile
+                                        </Link>
+
+                                        <Link
+                                            to="/dashboard/wallet"
+                                            className="flex items-center gap-3 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                                            onClick={() => setIsProfileOpen(false)}
+                                        >
+                                            <Wallet size={16} />
+                                            My Wallet
                                         </Link>
 
                                         <Link

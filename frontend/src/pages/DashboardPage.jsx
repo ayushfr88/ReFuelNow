@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, Bell, Search, Filter, Fuel, Clock, Navigation } from 'lucide-react';
+import { MapPin, Bell, Search, Filter, Fuel, Clock, Navigation, Zap } from 'lucide-react';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import WeeklySummary from '../components/dashboard/WeeklySummary';
 import DashboardHero from '../components/dashboard/DashboardHero';
 import OrderModal from '../components/dashboard/OrderModal';
 import RejectedOrderModal from '../components/dashboard/RejectedOrderModal';
+import LocationMap from '../components/dashboard/LocationMap';
 
 const DashboardPage = () => {
     const [address, setAddress] = useState('Detecting location...');
@@ -20,6 +21,7 @@ const DashboardPage = () => {
 
     const [isRejectedModalOpen, setIsRejectedModalOpen] = useState(false);
     const [rejectedOrder, setRejectedOrder] = useState(null);
+    const [allOrders, setAllOrders] = useState([]);
 
     useEffect(() => {
         fetchLastOrder();
@@ -91,6 +93,7 @@ const DashboardPage = () => {
             });
             if (response.ok) {
                 const data = await response.json();
+                setAllOrders(data);
                 if (data.length > 0) {
                     const newOrderData = data[0];
 
@@ -150,7 +153,8 @@ const DashboardPage = () => {
                     onOrderClick={handleOrderClick}
                     lastOrder={lastOrder}
                 />
-                <WeeklySummary />
+                <LocationMap coordinates={coordinates} address={address !== 'Detecting location...' ? address : 'Fetching address...'} />
+                <WeeklySummary orders={allOrders} />
 
                 {/* Nearby Stations Section */}
                 <div id="nearby-stations">
@@ -190,8 +194,8 @@ const DashboardPage = () => {
                             {nearbyStations.map(station => (
                                 <div key={station._id} className="bg-white rounded-xl border border-neutral-200 shadow-sm hover:shadow-md transition-shadow p-5">
                                     <div className="flex justify-between items-start mb-3">
-                                        <div className="bg-green-100 p-2 rounded-lg text-green-600">
-                                            <Fuel size={20} />
+                                        <div className={`p-2 rounded-lg ${station.type === 'ev' ? 'bg-purple-100 text-purple-600' : 'bg-green-100 text-green-600'}`}>
+                                            {station.type === 'ev' ? <Zap size={20} /> : <Fuel size={20} />}
                                         </div>
                                         <span className="text-xs font-medium bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full">
                                             {typeof station.distance === 'number' ? `${station.distance.toFixed(1)} km` : 'N/A'}
@@ -201,14 +205,23 @@ const DashboardPage = () => {
                                     <p className="text-sm text-neutral-500 line-clamp-2 h-10 mb-4">{station.address}</p>
 
                                     <div className="grid grid-cols-2 gap-3 mb-4">
-                                        <div className="bg-neutral-50 p-2 rounded-lg text-center">
-                                            <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">Diesel</div>
-                                            <div className="font-bold text-neutral-900">₹{station.dieselPrice}</div>
-                                        </div>
-                                        <div className="bg-neutral-50 p-2 rounded-lg text-center">
-                                            <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">Petrol</div>
-                                            <div className="font-bold text-neutral-900">₹{station.petrolPrice}</div>
-                                        </div>
+                                        {station.type === 'ev' ? (
+                                            <div className="col-span-2 bg-neutral-50 p-2 rounded-lg flex justify-between items-center px-4">
+                                                <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">Price per kWh</div>
+                                                <div className="font-bold text-neutral-900">₹{station.evPricePerKwh}</div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="bg-neutral-50 p-2 rounded-lg text-center">
+                                                    <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">Diesel</div>
+                                                    <div className="font-bold text-neutral-900">₹{station.dieselPrice}</div>
+                                                </div>
+                                                <div className="bg-neutral-50 p-2 rounded-lg text-center">
+                                                    <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">Petrol</div>
+                                                    <div className="font-bold text-neutral-900">₹{station.petrolPrice}</div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
 
                                     <button

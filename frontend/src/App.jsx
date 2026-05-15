@@ -21,6 +21,12 @@ import MyOrdersPage from './pages/MyOrdersPage';
 import SellerDashboardPage from './pages/SellerDashboardPage';
 import AddStationPage from './pages/AddStationPage';
 import StationOrdersPage from './pages/StationOrdersPage';
+import SellerProfilePage from './pages/SellerProfilePage';
+import WalletPage from './pages/WalletPage';
+import SellerWalletPage from './pages/SellerWalletPage';
+import DeliveryMenPage from './pages/DeliveryMenPage';
+import DeliveryManDashboard from './pages/DeliveryManDashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const LandingPage = () => (
   <>
@@ -47,12 +53,17 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/dashboard/profile" element={<ProfilePage />} />
-        <Route path="/dashboard/orders" element={<MyOrdersPage />} />
-        <Route path="/seller-dashboard" element={<SellerDashboardPage />} />
-        <Route path="/add-station" element={<AddStationPage />} />
-        <Route path="/seller/station/:stationId/orders" element={<StationOrdersPage />} />
+        <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['customer']}><DashboardPage /></ProtectedRoute>} />
+        <Route path="/dashboard/profile" element={<ProtectedRoute allowedRoles={['customer']}><ProfilePage /></ProtectedRoute>} />
+        <Route path="/dashboard/wallet" element={<ProtectedRoute allowedRoles={['customer']}><WalletPage /></ProtectedRoute>} />
+        <Route path="/dashboard/orders" element={<ProtectedRoute allowedRoles={['customer']}><MyOrdersPage /></ProtectedRoute>} />
+        <Route path="/seller-dashboard" element={<ProtectedRoute allowedRoles={['seller']}><SellerDashboardPage /></ProtectedRoute>} />
+        <Route path="/seller-dashboard/profile" element={<ProtectedRoute allowedRoles={['seller']}><SellerProfilePage /></ProtectedRoute>} />
+        <Route path="/seller-dashboard/wallet" element={<ProtectedRoute allowedRoles={['seller']}><SellerWalletPage /></ProtectedRoute>} />
+        <Route path="/seller-dashboard/delivery-men" element={<ProtectedRoute allowedRoles={['seller']}><DeliveryMenPage /></ProtectedRoute>} />
+        <Route path="/add-station" element={<ProtectedRoute allowedRoles={['seller']}><AddStationPage /></ProtectedRoute>} />
+        <Route path="/seller/station/:stationId/orders" element={<ProtectedRoute allowedRoles={['seller']}><StationOrdersPage /></ProtectedRoute>} />
+        <Route path="/delivery-dashboard" element={<ProtectedRoute allowedRoles={['delivery_man']}><DeliveryManDashboard /></ProtectedRoute>} />
       </Routes>
     </Router>
   );

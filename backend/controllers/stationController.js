@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 // @access  Private (Seller only)
 exports.addStation = async (req, res) => {
     try {
-        const { stationName, address, location, dieselPrice, petrolPrice } = req.body;
+        const { stationName, address, location, dieselPrice, petrolPrice, type, evPricePerKwh } = req.body;
 
         // Ensure user is a seller
         if (req.user.role !== 'seller') {
@@ -19,7 +19,9 @@ exports.addStation = async (req, res) => {
             address,
             location,
             dieselPrice,
-            petrolPrice
+            petrolPrice,
+            type,
+            evPricePerKwh
         });
 
         const station = await newStation.save();
@@ -128,7 +130,7 @@ exports.getSellerStations = async (req, res) => {
 // @access  Private (Seller only)
 exports.updateStation = async (req, res) => {
     try {
-        const { stationName, address, dieselPrice, petrolPrice } = req.body;
+        const { stationName, address, dieselPrice, petrolPrice, type, evPricePerKwh } = req.body;
 
         let station = await Station.findById(req.params.id);
 
@@ -147,7 +149,7 @@ exports.updateStation = async (req, res) => {
 
         station = await Station.findByIdAndUpdate(
             req.params.id,
-            { $set: { stationName, address, dieselPrice, petrolPrice, status } },
+            { $set: { stationName, address, dieselPrice, petrolPrice, status, type, evPricePerKwh } },
             { new: true }
         );
 

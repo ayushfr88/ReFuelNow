@@ -64,3 +64,63 @@ exports.getEarnings = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+// @desc    Register a new delivery man
+// @route   POST /api/seller/delivery-men
+// @access  Private (Seller only)
+exports.registerDeliveryMan = async (req, res) => {
+    try {
+        const { name, email, password, phone } = req.body;
+        const User = require('../models/User');
+
+        if (req.user.role !== 'seller') {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        let user = await User.findOne({ email });
+        if (user) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        user = new User({
+            name,
+            email,
+            password,
+            phone,
+            role: 'delivery_man',
+            sellerId: req.user.id
+        });
+
+        await user.save();
+
+        res.status(201).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// @desc    Get all delivery men for a seller
+// @route   GET /api/seller/delivery-men
+// @access  Private (Seller only)
+exports.getDeliveryMen = async (req, res) => {
+    try {
+        const User = require('../models/User');
+        if (req.user.role !== 'seller') {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        const deliveryMen = await User.find({ sellerId: req.user.id, role: 'delivery_man' })
+            .select('-password');
+
+        res.json(deliveryMen);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
